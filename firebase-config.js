@@ -1,2 +1,2 @@
-// Fill in after creating the Firebase project (see SETUP.md). Leave null to run in local DEMO mode.
-window.FIREBASE_CONFIG = null;
+// Firebase web config (public identifiers, not secrets). Data is end-to-end encrypted before upload.
+window.FIREBASE_CONFIG = { apiKey:"AIzaSyBeYfv-fXHTEyNgFHUfCh9fKumcpcwKeP8", authDomain:"lulu-malaaki-world.firebaseapp.com", databaseURL:"https://lulu-malaaki-world-default-rtdb.europe-west1.firebasedatabase.app", projectId:"lulu-malaaki-world", storageBucket:"lulu-malaaki-world.firebasestorage.app", messagingSenderId:"132932818797", appId:"1:132932818797:web:728a50ae08ecee08812c64" };
