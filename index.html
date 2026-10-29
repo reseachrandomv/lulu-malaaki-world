@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cut">
+<title>Lululemon & Malaaki's World</title><meta name="robots" content="noindex,nofollow"><link rel="preconnect" href="https://fonts.gstatic.com"><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head><body>
+<div class="bg"><i></i><i></i><i></i><img src="assets/cloud.svg" class="cl c1"><img src="assets/cloud.svg" class="cl c2"><img src="assets/cloud.svg" class="cl c3"><img src="assets/jelly.svg" class="dd d1"><img src="assets/penguin.svg" class="dd d2"><img src="assets/crab.svg" class="dd d3"><div id="sparkles"></div></div>
+<section id="lock" class="screen show"><div class="card lockcard">
+<div class="avs"><img src="assets/malaaki.jpg" class="av"><span class="hearts">💙</span><img src="assets/lululemon.jpg" class="av"></div><h1>Lululemon &amp; Malaaki's World</h1><p class="flags">♡ just us two ♡</p>
+<form id="lockform"><input id="pw" type="password" placeholder="Secret password" autocomplete="current-password"><button>Unlock ✨</button></form>
+<p id="lockmsg" class="muted">Only two people know the way in.</p></div></section>
+<section id="who" class="screen"><div class="card lockcard"><h2>Who are you? 💫</h2>
+<button class="big" data-me="Malaaki"><img src="assets/malaaki.jpg" class="av sm"> Malaaki</button><button class="big" data-me="Lululemon"><img src="assets/lululemon.jpg" class="av sm"> Lululemon</button>
+<p class="muted">Remembered on this device.</p></div></section>
+<section id="app" class="screen">
+<header><img src="assets/jelly.svg" class="logo"><b>Lululemon &amp; Malaaki's World</b><span id="mode" class="pill"></span><button id="lockbtn" title="Lock">🔒</button></header>
+<main>
+<div class="tab show" id="t-home"><div class="card banner"><img src="assets/cover.jpg" alt=""></div>
+ <div class="clocks"><div class="card clock"><span><img src="assets/malaaki.jpg" class="av sm"> Malaaki</span><strong id="c-mv"></strong><small id="d-mv"></small></div><div class="card clock"><span><img src="assets/lululemon.jpg" class="av sm"> Lululemon</span><strong id="c-de"></strong><small id="d-de"></small></div></div>
+ <div class="card"><h3>⏳ Until We Meet</h3><div class="mini" id="home-count"></div></div>
+ <div class="card"><h3>💙 Thinking of you</h3><button id="moodbtn" class="big glow">Send a hug 🤗</button><div class="moods" id="moodpick"></div><div id="moodlog" class="muted"></div></div>
+ <div class="card"><h3>🔔 Next up</h3><ul id="home-next" class="list"></ul></div>
+</div>
+<div class="tab" id="t-chat"><div id="msgs"></div>
+ <form id="chatform"><button type="button" id="emojibtn">😊</button><label class="imgbtn">📷<input type="file" id="img" accept="image/*" hidden></label><input id="msg" placeholder="Say something sweet…" autocomplete="off"><button>➤</button></form>
+ <div id="emojis" class="emojis"></div></div>
+<div class="tab" id="t-meet"><div class="card center"><h3>⏳ Until We Meet</h3><div id="count" class="count"></div><p id="meetlabel" class="muted"></p>
+ <input type="datetime-local" id="meetdate"><button id="savemeet">Save date</button></div></div>
+<div class="tab" id="t-cal"><div class="card"><h3>📅 Our Calendar</h3><div id="calnav"><button id="prevm">‹</button><b id="mlabel"></b><button id="nextm">›</button></div><div id="grid" class="grid"></div></div>
+ <form class="card row" id="evform"><input id="evtitle" placeholder="Event" required><input type="date" id="evdate" required><button>Add</button></form><ul id="evlist" class="list"></ul></div>
+<div class="tab" id="t-rem"><form class="card row" id="remform"><input id="remtitle" placeholder="Reminder (e.g. Lulu's birthday 🎂)" required><input type="datetime-local" id="remwhen" required><select id="remrep"><option value="">once</option><option value="yearly">yearly</option></select><button>Add</button></form>
+ <button id="notifbtn">Enable notifications 🔔</button><ul id="remlist" class="list"></ul></div>
+<div class="tab" id="t-mem"><form class="card row" id="memform"><label class="imgbtn">📷 Photo<input type="file" id="memimg" accept="image/*" hidden></label><input id="memcap" placeholder="Caption"><button>Add memory</button></form><div id="wall" class="wall"></div></div>
+<div class="tab" id="t-bucket"><form class="card row" id="bform"><input id="btext" placeholder="Something to do together…" required><button>Add</button></form><ul id="blist" class="list"></ul></div>
+</main>
+<nav><button data-t="home" class="on">🏠<span>Home</span></button><button data-t="chat">💬<span>Chat</span></button><button data-t="meet">⏳<span>Meet</span></button><button data-t="cal">📅<span>Calendar</span></button><button data-t="rem">🔔<span>Remind</span></button><button data-t="mem">📸<span>Memories</span></button><button data-t="bucket">✅<span>Bucket</span></button></nav>
+</section>
+<footer>Made by Fathimath Malaak Jaufar</footer>
+<div id="toast"></div>
+<script src="crypto-params.js"></script><script src="firebase-config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js" defer></script>
+<script src="app.js" defer></script></body></html>
