@@ -4,7 +4,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const C=window.WORLD_CRYPTO,enc=new TextEncoder(),dec=new TextDecoder();
 const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u))),ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 let KEY=null,ME=localStorage.getItem('world:me'),store=null;
-const DATA={profiles:{},chat:{},events:{},reminders:{},memories:{},bucket:{},moods:{},settings:{}};
+const DATA={presence:{},profiles:{},chat:{},events:{},reminders:{},memories:{},bucket:{},moods:{},settings:{}};
 async function derive(pw){const base=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveKey']);
  return crypto.subtle.deriveKey({name:'PBKDF2',salt:ub(C.salt),iterations:C.iterations,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
 async function seal(o){const iv=crypto.getRandomValues(new Uint8Array(12));return{iv:b64(iv),ct:b64(await crypto.subtle.encrypt({name:'AES-GCM',iv},KEY,enc.encode(JSON.stringify(o))))}}
@@ -17,8 +17,28 @@ function demoStore(){const k=c=>'world:demo:'+c,get=c=>JSON.parse(localStorage.g
  addEventListener('storage',e=>{if(e.key&&e.key.startsWith('world:demo:'))fire(e.key.slice(11))});
  return{mode:'Demo (this device)',put(c,id,v){const o=get(c);o[id]=v;localStorage.setItem(k(c),JSON.stringify(o));fire(c)},
   del(c,id){const o=get(c);delete o[id];localStorage.setItem(k(c),JSON.stringify(o));fire(c)},on(c,f){(subs[c]=subs[c]||[]).push(f);f(get(c))}}}
-function fbStore(){const db=firebase.database(),r=c=>db.ref('world/'+c);
- return{mode:'Live 🔐',put:(c,id,v)=>r(c).child(id).set(c==='chat'?{...v,uid:AUTH.uid}:v),del:(c,id)=>r(c).child(id).remove(),on:(c,f)=>r(c).on('value',s=>f(s.val()||{}))}}
+// Live store. Current DB rules only allow reading single records (world/<col>/<id>), not whole collections,
+// so list-type collections are an append-only log at sequential ids L0000000, L0000001, ... (each item = {iv,ct,k[,d]}).
+// The newest op for an item id wins; d=1 marks a deletion. Fixed-key data (profiles, settings, presence) uses direct ids.
+const KEYED={profiles:['Malaaki','Lululemon'],settings:['meet'],presence:['Malaaki','Lululemon']};
+const slot=n=>'L'+String(n).padStart(7,'0');
+function fbStore(){const db=firebase.database(),r=c=>db.ref('world/'+(window.COL_PREFIX||'')+c),LOG={};
+ const L=c=>LOG[c]=LOG[c]||{next:0,items:{},subs:[],started:false};
+ const emit=c=>{const l=L(c);l.subs.forEach(f=>f({...l.items}))};
+ const apply=(c,v)=>{const l=L(c);if(!v||!v.k)return;if(v.d)delete l.items[v.k];else l.items[v.k]={iv:v.iv,ct:v.ct}};
+ async function follow(c){const l=L(c);
+  for(;;){const got=await Promise.all(Array.from({length:40},(_,i)=>r(c).child(slot(l.next+i)).get().then(s=>s.val()).catch(()=>null)));
+   let i=0;for(;i<got.length&&got[i]!==null;i++)apply(c,got[i]);l.next+=i;if(i<got.length)break}
+  emit(c);watch(c)}
+ function watch(c){const l=L(c),ref=r(c).child(slot(l.next));
+  const h=ref.on('value',s=>{const v=s.val();if(v===null)return;ref.off('value',h);apply(c,v);l.next++;
+   (async()=>{for(;;){const v2=(await r(c).child(slot(l.next)).get()).val();if(v2===null)break;apply(c,v2);l.next++}emit(c);watch(c)})()},e=>console.warn('watch',c,e))}
+ async function append(c,rec){const l=L(c);for(let n=l.next;;n++){const res=await r(c).child(slot(n)).transaction(cur=>cur===null?rec:undefined,undefined,false);if(res.committed)return}}
+ return{mode:'Live 🔐',
+  put:(c,id,v)=>KEYED[c]?r(c).child(id).set(v):append(c,{...v,k:id}),
+  del:async(c,id)=>KEYED[c]?r(c).child(id).remove():append(c,{...(await seal({deleted:true})),k:id,d:1}),
+  on(c,f){if(KEYED[c]){const m={};KEYED[c].forEach(id=>r(c).child(id).on('value',s=>{const v=s.val();if(v)m[id]=v;else delete m[id];f({...m})},e=>console.warn(c,e)));return}
+   const l=L(c);l.subs.push(f);if(!l.started){l.started=true;follow(c)}}}}
 
 // ---------- Lock ----------
 $('#lockform').onsubmit=async e=>{e.preventDefault();$('#lockmsg').textContent='Checking… 🔑';
@@ -26,44 +46,24 @@ $('#lockform').onsubmit=async e=>{e.preventDefault();$('#lockmsg').textContent='
  try{await crypto.subtle.decrypt({name:'AES-GCM',iv:ub(C.check.iv)},k,ub(C.check.ct));KEY=k;afterUnlock()}
  catch{$('.lockcard').classList.remove('shake');void $('.lockcard').offsetWidth;$('.lockcard').classList.add('shake');$('#lockmsg').textContent='Not quite… try again 💭'}};
 function show(id){$$('.screen').forEach(s=>s.classList.toggle('show',s.id===id))}
-let LIVE=false,AUTH=null,MEMBERS={},signup=false,typingT=null;
-function afterUnlock(){LIVE=!!(window.FIREBASE_CONFIG&&window.firebase&&firebase.auth);if(!LIVE){if(!ME)return show('who');return start()}
- if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);
- show('auth');firebase.auth().onAuthStateChanged(u=>{AUTH=u;if(!u)return show('auth');routeMember()})}
-let LEGACY=false;
-async function routeMember(){let m;try{m=(await firebase.database().ref('world_members').get()).val()||{}}
- catch(x){LEGACY=true;ME=localStorage.getItem('world:me');if(ME)return start();$$('[data-me]').forEach(b=>b.disabled=false);return show('who')} // old rules still active: keep working
- MEMBERS=m;
- const mine=Object.keys(m).find(k=>m[k]===AUTH.uid);if(mine){ME=mine;return start()}
- const free=['Malaaki','Lululemon'].filter(n=>!m[n]);if(!free.length)return show('full');
- $$('[data-me]').forEach(b=>b.disabled=!free.includes(b.dataset.me));show('who')}
-const amsg=t=>$('#authmsg').textContent=t;
-const nice=e=>({'auth/invalid-credential':'Wrong email or password 💭','auth/wrong-password':'Wrong email or password 💭','auth/user-not-found':'No account with that email 💭','auth/email-already-in-use':'That email already has an account, sign in instead 🌸','auth/weak-password':'Password needs at least 6 characters','auth/invalid-email':'That email looks off 💭','auth/too-many-requests':'Too many tries, wait a bit ⏳'})[e.code]||'Oops: '+(e.message||e);
-$('#authswap').onclick=e=>{e.preventDefault();signup=!signup;$('#authtitle').textContent=signup?'Create account 🌸':'Sign in 💫';$('#authgo').textContent=signup?'Create ✨':'Sign in ✨';
- $('#authswap').textContent=signup?'Have an account? Sign in 💫':'New here? Create an account 🌸';$('#apass').autocomplete=signup?'new-password':'current-password'};
-$('#authform').onsubmit=async e=>{e.preventDefault();amsg(signup?'Creating… 🌸':'Signing in… 💫');const em=$('#aemail').value.trim(),pw=$('#apass').value;
- try{signup?await firebase.auth().createUserWithEmailAndPassword(em,pw):await firebase.auth().signInWithEmailAndPassword(em,pw);$('#apass').value=''}catch(x){amsg(nice(x))}};
-$('#forgot').onclick=async e=>{e.preventDefault();const em=$('#aemail').value.trim();if(!em)return amsg('Type your email first, then tap forgot 💌');
- try{await firebase.auth().sendPasswordResetEmail(em);amsg('Reset link sent! Check your inbox 💌')}catch(x){amsg(nice(x))}};
-$$('[data-me]').forEach(b=>b.onclick=async()=>{const name=b.dataset.me;
- if(!LIVE||LEGACY){ME=name;localStorage.setItem('world:me',ME);return start()}
- const res=await firebase.database().ref('world_members/'+name).transaction(cur=>cur===null?AUTH.uid:undefined).catch(()=>null);
- if(res&&res.committed){ME=name;start()}else{$('#whomsg').textContent='That spot was just taken 🥺';routeMember()}});
-$$('.signout').forEach(b=>b.onclick=async()=>{if(LIVE&&AUTH){await firebase.database().ref('presence/'+AUTH.uid).update({online:false,typing:false,last:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});await firebase.auth().signOut()}location.reload()});
-const PRES={};
-function presence(){const db=firebase.database(),me=db.ref('presence/'+AUTH.uid),TS=firebase.database.ServerValue.TIMESTAMP;
- db.ref('.info/connected').on('value',s=>{if(!s.val())return;me.onDisconnect().update({online:false,typing:false,last:TS}).then(()=>me.update({online:true,last:TS}))});
- db.ref('world_members').on('value',s=>{MEMBERS=s.val()||{};rPres()});db.ref('presence').on('value',s=>{Object.keys(PRES).forEach(k=>delete PRES[k]);Object.assign(PRES,s.val()||{});rPres()});
- $('#msg').addEventListener('input',()=>{me.update({typing:true});clearTimeout(typingT);typingT=setTimeout(()=>me.update({typing:false}),3000)});
- setInterval(rPres,30000)}
+let LIVE=false,PRES={},beat=null;
+function afterUnlock(){LIVE=!!(window.FIREBASE_CONFIG&&window.firebase);if(LIVE&&!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);if(!ME)return show('who');start()}
+$$('[data-me]').forEach(b=>b.onclick=()=>{ME=b.dataset.me;localStorage.setItem('world:me',ME);start()});
+$$('.signout').forEach(b=>b.onclick=()=>{localStorage.removeItem('world:me');location.reload()});
+// Presence: encrypted heartbeat at world/presence/<name> = seal({ts,typing}); online if seen within 60s.
+let typing=false,typingT=null;
+async function heartbeat(){if(store&&ME)store.put('presence',ME,await seal({ts:Date.now(),typing}))}
+function presence(){heartbeat();beat=setInterval(heartbeat,20000);
+ $('#msg').addEventListener('input',()=>{if(!typing){typing=true;heartbeat()}clearTimeout(typingT);typingT=setTimeout(()=>{typing=false;heartbeat()},3000)});
+ addEventListener('visibilitychange',()=>{if(!document.hidden)heartbeat()});setInterval(rPres,15000)}
 const ago=t=>{const s=(Date.now()-t)/1e3;return s<60?'just now':s<3600?Math.floor(s/60)+' min ago':s<86400?Math.floor(s/3600)+' h ago':new Date(t).toLocaleDateString([], {dateStyle:'medium'})};
-function pOf(n){return PRES[MEMBERS[n]]||{}}
+function pOf(n){const p=DATA.presence?.[n];return p?{online:Date.now()-p.ts<60000,typing:p.typing,last:p.ts}:{}}
 function rPres(){$$('[data-dot]').forEach(d=>d.classList.toggle('on',!!pOf(d.dataset.dot).online));
  const o=ME==='Malaaki'?'Lululemon':'Malaaki',p=pOf(o),other=dn(o);
- $('#peer').textContent=!MEMBERS[o]?`${other} hasn't joined yet 🌸`:p.typing&&p.online?`${other} is typing…`:p.online?`🟢 ${other} is online`:p.last?`${other} · last seen ${ago(p.last)}`:`${other} · offline`}
+ $('#peer').textContent=p.typing&&p.online?`${other} is typing…`:p.online?`🟢 ${other} is online`:p.last?`${other} · last seen ${ago(p.last)}`:`${other} hasn't popped in yet 🌸`}
 $('#lockbtn').onclick=()=>location.reload();
 
-function start(){show('app');store=LIVE?fbStore():demoStore();$('#mode').textContent=store.mode;if(LIVE){$('#outbtn').hidden=false;if(!LEGACY)presence();else $('#peer').hidden=true}else $('#peer').hidden=true;
+function start(){show('app');store=LIVE?fbStore():demoStore();$('#mode').textContent=store.mode;$('#outbtn').hidden=false;presence();
  Object.keys(DATA).forEach(c=>store.on(c,async raw=>{const out={};for(const[id,v]of Object.entries(raw)){const o=await open_(v);if(o)out[id]=o}DATA[c]=out;render(c)}));
  setInterval(tick,1000);tick();setInterval(checkReminders,30000)}
 
@@ -75,14 +75,14 @@ const sorted=c=>Object.entries(DATA[c]).map(([id,v])=>({id,...v}));
 const TZ={Malaaki:'Indian/Maldives',Lululemon:'Europe/Berlin'};
 const fmt=(ts,tz,o={hour:'2-digit',minute:'2-digit'})=>new Intl.DateTimeFormat('en-GB',{timeZone:tz,...o}).format(ts);
 
-function render(c){({profiles:rProf,chat:rChat,events:rCal,reminders:rRem,memories:rMem,bucket:rBucket,moods:rMood,settings:rMeet})[c]?.();rHome()}
+function render(c){({presence:rPres,profiles:rProf,chat:rChat,events:rCal,reminders:rRem,memories:rMem,bucket:rBucket,moods:rMood,settings:rMeet})[c]?.();rHome()}
 
 // ---------- Chat ----------
 function rChat(){const m=sorted('chat').sort((a,b)=>a.ts-b.ts);
  $('#msgs').innerHTML=m.map(x=>`<div class="b ${x.from===ME?'me':'them'}"><div class="n"><img class="av xs" data-av="${esc(x.from)}" src="${pic(x.from)}"><i class="dot ${pOf(x.from).online?'on':''}" data-dot="${esc(x.from)}"></i> ${esc(dn(x.from))}</div>${x.text?esc(x.text):''}${x.img?`<img src="${x.img}" alt="">`:''}
  <div class="t">${fmt(x.ts,TZ[x.from]||TZ.Malaaki)}</div></div>`).join('');scrollChat()}
 const scrollChat=()=>setTimeout(()=>scrollTo({top:document.body.scrollHeight,behavior:'smooth'}),50);
-$('#chatform').onsubmit=async e=>{e.preventDefault();const t=$('#msg').value.trim();if(!t)return;$('#msg').value='';store.put('chat',uid(),await seal({from:ME,text:t,ts:Date.now()}));if(LIVE)firebase.database().ref('presence/'+AUTH.uid).update({typing:false})};
+$('#chatform').onsubmit=async e=>{e.preventDefault();const t=$('#msg').value.trim();if(!t)return;$('#msg').value='';store.put('chat',uid(),await seal({from:ME,text:t,ts:Date.now()}));clearTimeout(typingT);if(typing){typing=false;heartbeat()}};
 const EM='😊😂🥹😍🥰😘💙💜✨🌊🏝️🤗😭🙈🔥🎉🫶👯‍♀️☕🍰🌙⭐💫😴🤍'.match(/\p{Extended_Pictographic}\uFE0F?|.\u200d./gu);
 $('#emojis').innerHTML=[...new Set(EM)].map(e=>`<span>${e}</span>`).join('');
 $('#emojibtn').onclick=()=>$('#emojis').classList.toggle('show');$('#emojis').onclick=e=>{if(e.target.tagName==='SPAN'){$('#msg').value+=e.target.textContent;$('#msg').focus()}};
@@ -92,7 +92,7 @@ $('#img').onchange=async e=>{const f=e.target.files[0];if(!f)return;store.put('c
 // ---------- Profiles (encrypted, world/profiles/<name>) ----------
 const DEF={Malaaki:'assets/malaaki.jpg',Lululemon:'assets/lululemon.jpg'};
 const pic=n=>DATA.profiles[n]?.img||DEF[n]||DEF.Malaaki,dn=n=>DATA.profiles[n]?.name||n;
-function rProf(){$$('img[data-av]').forEach(i=>{const s=pic(i.dataset.av);if(i.getAttribute('src')!==s)i.src=s});$$('[data-nm]').forEach(e=>e.textContent=dn(e.dataset.nm));rChat();if(window.rPres&&LIVE)rPres();if($('#prof').classList.contains('show'))openProf(curP)}
+function rProf(){$$('img[data-av]').forEach(i=>{const s=pic(i.dataset.av);if(i.getAttribute('src')!==s)i.src=s});$$('[data-nm]').forEach(e=>e.textContent=dn(e.dataset.nm));rChat();rPres();if($('#prof').classList.contains('show'))openProf(curP)}
 let curP=null;
 function openProf(n){curP=n;const p=DATA.profiles[n]||{};$('#pimg').src=pic(n);$('#pname').textContent=dn(n);$('#pmood').textContent=p.mood||'✨ no status yet';$('#pbio').textContent=p.bio||'';
  $('#pedit').hidden=n!==ME;$('#prof').classList.add('show')}

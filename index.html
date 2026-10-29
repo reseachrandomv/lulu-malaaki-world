@@ -5,18 +5,11 @@
 <div class="avs"><img src="assets/malaaki.jpg" class="av"><span class="hearts">💙</span><img src="assets/lululemon.jpg" class="av"></div><h1>Lululemon &amp; Malaaki's World</h1><p class="flags">♡ just us two ♡</p>
 <form id="lockform"><input id="pw" type="password" placeholder="Secret password" autocomplete="current-password"><button>Unlock ✨</button></form>
 <p id="lockmsg" class="muted">Only two people know the way in.</p></div></section>
-<section id="auth" class="screen"><div class="card lockcard">
-<div class="avs"><img src="assets/malaaki.jpg" class="av"><span class="hearts">💙</span><img src="assets/lululemon.jpg" class="av"></div><h2 id="authtitle">Sign in 💫</h2>
-<form id="authform"><input id="aemail" type="email" placeholder="Email" autocomplete="email" required><input id="apass" type="password" placeholder="Your account password" autocomplete="current-password" minlength="6" required><button id="authgo">Sign in ✨</button></form>
-<p><a href="#" id="authswap">New here? Create an account 🌸</a> · <a href="#" id="forgot">Forgot password?</a></p>
-<p id="authmsg" class="muted">Your own account, just for you.</p></div></section>
-<section id="full" class="screen"><div class="card lockcard"><img src="assets/jelly.svg" style="width:90px"><h2>This world is full 🥺</h2>
-<p class="muted">Only two besties live here, and both spots are taken. 💙</p><button class="signout">Sign out</button></div></section>
 <section id="who" class="screen"><div class="card lockcard"><h2>Who are you? 💫</h2>
-<button class="big" data-me="Malaaki"><img src="assets/malaaki.jpg" class="av sm"> Malaaki</button><button class="big" data-me="Lululemon"><img src="assets/lululemon.jpg" class="av sm"> Lululemon</button>
-<p class="muted" id="whomsg">Pick once, it’s yours forever 💙</p></div></section>
+<button class="big" data-me="Malaaki"><img src="assets/malaaki.jpg" class="av sm"> I’m Malaaki</button><button class="big" data-me="Lululemon"><img src="assets/lululemon.jpg" class="av sm"> I’m Lululemon</button>
+<p class="muted" id="whomsg">Remembered on this device 💙</p></div></section>
 <section id="app" class="screen">
-<header><img src="assets/jelly.svg" class="logo"><b>Lululemon &amp; Malaaki's World</b><span class="hav"><img src="assets/malaaki.jpg" class="av sm" data-av="Malaaki"><i class="dot" data-dot="Malaaki"></i></span><span class="hav"><img src="assets/lululemon.jpg" class="av sm" data-av="Lululemon"><i class="dot" data-dot="Lululemon"></i></span><span id="mode" class="pill"></span><button id="lockbtn" title="Lock">🔒</button><button class="signout" id="outbtn" title="Sign out" hidden>🚪</button></header>
+<header><img src="assets/jelly.svg" class="logo"><b>Lululemon &amp; Malaaki's World</b><span class="hav"><img src="assets/malaaki.jpg" class="av sm" data-av="Malaaki"><i class="dot" data-dot="Malaaki"></i></span><span class="hav"><img src="assets/lululemon.jpg" class="av sm" data-av="Lululemon"><i class="dot" data-dot="Lululemon"></i></span><span id="mode" class="pill"></span><button id="lockbtn" title="Lock">🔒</button><button class="signout" id="outbtn" title="Switch who I am" hidden>🔄</button></header>
 <main>
 <div class="tab show" id="t-home"><div class="card banner"><img src="assets/cover.jpg" alt=""></div>
  <div class="clocks"><div class="card clock"><span><img src="assets/malaaki.jpg" class="av sm" data-av="Malaaki"> <span data-nm="Malaaki">Malaaki</span></span><strong id="c-mv"></strong><small id="d-mv"></small></div><div class="card clock"><span><img src="assets/lululemon.jpg" class="av sm" data-av="Lululemon"> <span data-nm="Lululemon">Lululemon</span></span><strong id="c-de"></strong><small id="d-de"></small></div></div>
@@ -47,5 +40,4 @@
 <script src="crypto-params.js"></script><script src="firebase-config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
 <script src="app.js" defer></script></body></html>
