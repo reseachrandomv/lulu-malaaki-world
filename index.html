@@ -5,19 +5,26 @@
 <div class="avs"><img src="assets/malaaki.jpg" class="av"><span class="hearts">💙</span><img src="assets/lululemon.jpg" class="av"></div><h1>Lululemon &amp; Malaaki's World</h1><p class="flags">♡ just us two ♡</p>
 <form id="lockform"><input id="pw" type="password" placeholder="Secret password" autocomplete="current-password"><button>Unlock ✨</button></form>
 <p id="lockmsg" class="muted">Only two people know the way in.</p></div></section>
+<section id="auth" class="screen"><div class="card lockcard">
+<div class="avs"><img src="assets/malaaki.jpg" class="av"><span class="hearts">💙</span><img src="assets/lululemon.jpg" class="av"></div><h2 id="authtitle">Sign in 💫</h2>
+<form id="authform"><input id="aemail" type="email" placeholder="Email" autocomplete="email" required><input id="apass" type="password" placeholder="Your account password" autocomplete="current-password" minlength="6" required><button id="authgo">Sign in ✨</button></form>
+<p><a href="#" id="authswap">New here? Create an account 🌸</a> · <a href="#" id="forgot">Forgot password?</a></p>
+<p id="authmsg" class="muted">Your own account, just for you.</p></div></section>
+<section id="full" class="screen"><div class="card lockcard"><img src="assets/jelly.svg" style="width:90px"><h2>This world is full 🥺</h2>
+<p class="muted">Only two besties live here, and both spots are taken. 💙</p><button class="signout">Sign out</button></div></section>
 <section id="who" class="screen"><div class="card lockcard"><h2>Who are you? 💫</h2>
 <button class="big" data-me="Malaaki"><img src="assets/malaaki.jpg" class="av sm"> Malaaki</button><button class="big" data-me="Lululemon"><img src="assets/lululemon.jpg" class="av sm"> Lululemon</button>
-<p class="muted">Remembered on this device.</p></div></section>
+<p class="muted" id="whomsg">Pick once, it’s yours forever 💙</p></div></section>
 <section id="app" class="screen">
-<header><img src="assets/jelly.svg" class="logo"><b>Lululemon &amp; Malaaki's World</b><span id="mode" class="pill"></span><button id="lockbtn" title="Lock">🔒</button></header>
+<header><img src="assets/jelly.svg" class="logo"><b>Lululemon &amp; Malaaki's World</b><span class="hav"><img src="assets/malaaki.jpg" class="av sm" data-av="Malaaki"><i class="dot" data-dot="Malaaki"></i></span><span class="hav"><img src="assets/lululemon.jpg" class="av sm" data-av="Lululemon"><i class="dot" data-dot="Lululemon"></i></span><span id="mode" class="pill"></span><button id="lockbtn" title="Lock">🔒</button><button class="signout" id="outbtn" title="Sign out" hidden>🚪</button></header>
 <main>
 <div class="tab show" id="t-home"><div class="card banner"><img src="assets/cover.jpg" alt=""></div>
- <div class="clocks"><div class="card clock"><span><img src="assets/malaaki.jpg" class="av sm"> Malaaki</span><strong id="c-mv"></strong><small id="d-mv"></small></div><div class="card clock"><span><img src="assets/lululemon.jpg" class="av sm"> Lululemon</span><strong id="c-de"></strong><small id="d-de"></small></div></div>
+ <div class="clocks"><div class="card clock"><span><img src="assets/malaaki.jpg" class="av sm" data-av="Malaaki"> <span data-nm="Malaaki">Malaaki</span></span><strong id="c-mv"></strong><small id="d-mv"></small></div><div class="card clock"><span><img src="assets/lululemon.jpg" class="av sm" data-av="Lululemon"> <span data-nm="Lululemon">Lululemon</span></span><strong id="c-de"></strong><small id="d-de"></small></div></div>
  <div class="card"><h3>⏳ Until We Meet</h3><div class="mini" id="home-count"></div></div>
  <div class="card"><h3>💙 Thinking of you</h3><button id="moodbtn" class="big glow">Send a hug 🤗</button><div class="moods" id="moodpick"></div><div id="moodlog" class="muted"></div></div>
  <div class="card"><h3>🔔 Next up</h3><ul id="home-next" class="list"></ul></div>
 </div>
-<div class="tab" id="t-chat"><div id="msgs"></div>
+<div class="tab" id="t-chat"><div id="peer" class="peer"></div><div id="msgs"></div>
  <form id="chatform"><button type="button" id="emojibtn">😊</button><label class="imgbtn">📷<input type="file" id="img" accept="image/*" hidden></label><input id="msg" placeholder="Say something sweet…" autocomplete="off"><button>➤</button></form>
  <div id="emojis" class="emojis"></div></div>
 <div class="tab" id="t-meet"><div class="card center"><h3>⏳ Until We Meet</h3><div id="count" class="count"></div><p id="meetlabel" class="muted"></p>
@@ -33,7 +40,12 @@
 </section>
 <footer>Made by Fathimath Malaak Jaufar</footer>
 <div id="toast"></div>
+<div id="prof" class="modal"><div class="card lockcard"><button class="close" id="pclose">✕</button>
+<img id="pimg" class="av big"><h2 id="pname"></h2><p id="pmood" class="pill"></p><p id="pbio" class="muted"></p><button id="pedit" hidden>Edit profile ✏️</button>
+<form id="pform" hidden><label class="imgbtn">📷 New picture<input type="file" id="pfile" accept="image/*" hidden></label>
+<input id="fname" maxlength="30" placeholder="Display name"><input id="fmood" maxlength="60" placeholder="Status / mood ✨"><textarea id="fbio" maxlength="300" placeholder="Bio"></textarea><button>Save 💙</button></form></div></div>
 <script src="crypto-params.js"></script><script src="firebase-config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
 <script src="app.js" defer></script></body></html>

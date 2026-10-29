@@ -93,3 +93,17 @@ footer{background:rgba(255,255,255,.75);color:var(--mut)}
 #toast{background:#fff;color:var(--deep);box-shadow:0 6px 20px rgba(91,141,239,.35)}
 .empty{text-align:center;padding:18px;color:var(--mut)}.empty img{width:90px;border-radius:50%;border:3px solid #fff;animation:bob 4s ease-in-out infinite}
 @media(min-width:760px){#t-home .banner{grid-column:1/-1}}
+
+/* accounts + presence */
+#authform{display:flex;flex-direction:column;gap:10px;margin-top:8px}#auth a{color:var(--deep);font-weight:700;font-size:.85rem}
+.hav{position:relative;display:inline-block}.dot{position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:#c4cbe0;border:2px solid #fff}
+.dot.on{background:#3ddc84;box-shadow:0 0 6px #3ddc84}.n .dot{width:8px;height:8px;right:auto;left:14px;bottom:auto;top:12px}.n{position:relative}
+.peer{position:sticky;top:64px;z-index:3;text-align:center;font-size:.8rem;color:var(--deep);background:rgba(255,255,255,.8);border-radius:99px;padding:4px 12px;margin:0 auto 8px;width:max-content;max-width:90%}
+.big[disabled]{opacity:.45;filter:grayscale(.6)}
+
+/* profiles */
+[data-av],.n .av{cursor:pointer}.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(120,150,220,.35);backdrop-filter:blur(6px)}
+.modal.show{display:flex}.modal .lockcard{position:relative}.av.big{width:120px;height:120px}.close{position:absolute;right:10px;top:10px;padding:4px 10px}
+#pform{display:flex;flex-direction:column;gap:9px;margin-top:10px}#pform textarea{min-height:70px;border-radius:14px;border:1px solid #A9C6F5;padding:10px;font:inherit}
+#pbio{white-space:pre-wrap}
+[hidden]{display:none!important}
