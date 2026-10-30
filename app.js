@@ -2,7 +2,7 @@
 // The key is derived from the shared password with PBKDF2 (600k iterations). The password is never stored or sent.
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const C=window.WORLD_CRYPTO,enc=new TextEncoder(),dec=new TextDecoder();
-const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u))),ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const b64=u=>{const a=new Uint8Array(u);let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode.apply(null,a.subarray(i,i+32768));return btoa(s)},ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 let KEY=null,ME=localStorage.getItem('world:me'),store=null;
 const DATA={presence:{},profiles:{},chat:{},events:{},reminders:{},memories:{},bucket:{},moods:{},settings:{}};
 async function derive(pw){const base=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveKey']);
@@ -82,12 +82,14 @@ function rChat(){const m=sorted('chat').sort((a,b)=>a.ts-b.ts);
  $('#msgs').innerHTML=m.map(x=>`<div class="b ${x.from===ME?'me':'them'}"><div class="n"><img class="av xs" data-av="${esc(x.from)}" src="${pic(x.from)}"><i class="dot ${pOf(x.from).online?'on':''}" data-dot="${esc(x.from)}"></i> ${esc(dn(x.from))}</div>${x.text?esc(x.text):''}${x.img?`<img src="${x.img}" alt="">`:''}
  <div class="t">${fmt(x.ts,TZ[x.from]||TZ.Malaaki)}</div></div>`).join('');scrollChat()}
 const scrollChat=()=>setTimeout(()=>scrollTo({top:document.body.scrollHeight,behavior:'smooth'}),50);
-$('#chatform').onsubmit=async e=>{e.preventDefault();const t=$('#msg').value.trim();if(!t)return;$('#msg').value='';store.put('chat',uid(),await seal({from:ME,text:t,ts:Date.now()}));clearTimeout(typingT);if(typing){typing=false;heartbeat()}};
+$('#chatform').onsubmit=async e=>{e.preventDefault();const t=$('#msg').value.trim();if(!t)return;$('#msg').value='';await safe(async()=>store.put('chat',uid(),await seal({from:ME,text:t,ts:Date.now()})));clearTimeout(typingT);if(typing){typing=false;heartbeat()}};
 const EM='😊😂🥹😍🥰😘💙💜✨🌊🏝️🤗😭🙈🔥🎉🫶👯‍♀️☕🍰🌙⭐💫😴🤍'.match(/\p{Extended_Pictographic}\uFE0F?|.\u200d./gu);
 $('#emojis').innerHTML=[...new Set(EM)].map(e=>`<span>${e}</span>`).join('');
 $('#emojibtn').onclick=()=>$('#emojis').classList.toggle('show');$('#emojis').onclick=e=>{if(e.target.tagName==='SPAN'){$('#msg').value+=e.target.textContent;$('#msg').focus()}};
-function shrink(file,max=900){return new Promise(r=>{const i=new Image();i.onload=()=>{const s=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.8))};i.src=URL.createObjectURL(file)})}
-$('#img').onchange=async e=>{const f=e.target.files[0];if(!f)return;store.put('chat',uid(),await seal({from:ME,img:await shrink(f),ts:Date.now()}));e.target.value=''};
+async function shrink(file,max=1280,q=.7){let src;try{src=await createImageBitmap(file)}catch{src=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('fmt'));i.src=URL.createObjectURL(file)})}
+ const w=src.width,h=src.height;for(let m=max,qq=q;;m=Math.round(m*.8),qq=Math.max(.5,qq-.05)){const s=Math.min(1,m/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.round(w*s);c.height=Math.round(h*s);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);const d=c.toDataURL('image/jpeg',qq);if(d.length<400000||m<300)return d}}
+async function safe(fn,ok){try{await fn();if(ok)toast(ok)}catch(err){console.error(err);toast(err&&err.message==='fmt'?'That photo type can’t be read — try a JPG/PNG 📷':'Couldn’t send — check your connection and try again 💭')}}
+$('#img').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;toast('Sending photo… 📷');await safe(async()=>store.put('chat',uid(),await seal({from:ME,img:await shrink(f),ts:Date.now()})),'Photo sent 💙')};
 
 // ---------- Profiles (encrypted, world/profiles/<name>) ----------
 const DEF={Malaaki:'assets/malaaki.jpg',Lululemon:'assets/lululemon.jpg'};
@@ -101,10 +103,9 @@ $('#pclose').onclick=()=>{$('#prof').classList.remove('show');$('#pform').hidden
 $('#prof').onclick=e=>{if(e.target.id==='prof')$('#pclose').onclick()};
 let newPic=null;
 $('#pedit').onclick=()=>{const p=DATA.profiles[ME]||{};$('#fname').value=dn(ME);$('#fmood').value=p.mood||'';$('#fbio').value=p.bio||'';newPic=null;$('#pform').hidden=false};
-$('#pfile').onchange=async e=>{const f=e.target.files[0];if(!f)return;newPic=await shrink(f,512);$('#pimg').src=newPic;e.target.value=''};
+$('#pfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;await safe(async()=>{newPic=await shrink(f,512,.8);$('#pimg').src=newPic})};
 $('#pform').onsubmit=async e=>{e.preventDefault();const p=DATA.profiles[ME]||{};
- await store.put('profiles',ME,await seal({name:$('#fname').value.trim()||ME,mood:$('#fmood').value.trim(),bio:$('#fbio').value.trim(),img:newPic||p.img||null,ts:Date.now()}));
- $('#pform').hidden=true;toast('Profile saved 💙')};
+ await safe(async()=>{await store.put('profiles',ME,await seal({name:$('#fname').value.trim()||ME,mood:$('#fmood').value.trim(),bio:$('#fbio').value.trim(),img:newPic||p.img||null,ts:Date.now()}));$('#pform').hidden=true},'Profile saved 💙')};
 
 // ---------- Clocks + countdown ----------
 function parts(ms){ms=Math.max(0,ms);return[Math.floor(ms/864e5),Math.floor(ms/36e5)%24,Math.floor(ms/6e4)%60,Math.floor(ms/1e3)%60]}
@@ -137,7 +138,7 @@ function checkReminders(){sorted('reminders').forEach(r=>{const t=nextAt(r),k=r.
 
 // ---------- Memories ----------
 function rMem(){$('#wall').innerHTML=sorted('memories').sort((a,b)=>b.ts-a.ts).map((m,i)=>`<div class="polaroid" style="--r:${(i%2?1:-1)*(1+i%3)}deg"><img src="${m.img}" alt=""><p>${esc(m.cap)}</p><small style="display:flex;justify-content:space-between;color:#5865f2">${esc(m.by)}<a style="cursor:pointer" onclick="delItem('memories','${m.id}')">🗑</a></small></div>`).join('')||'<div class="empty"><img src="assets/lululemon.jpg"><p>Add your first memory 📸</p></div>'}
-$('#memform').onsubmit=async e=>{e.preventDefault();const f=$('#memimg').files[0];if(!f)return toast('Pick a photo first 📷');store.put('memories',uid(),await seal({img:await shrink(f,1000),cap:$('#memcap').value,by:ME,ts:Date.now()}));e.target.reset();toast('Memory saved 💙')};
+$('#memform').onsubmit=async e=>{e.preventDefault();const f=$('#memimg').files[0];if(!f)return toast('Pick a photo first 📷');const cap=$('#memcap').value;e.target.reset();toast('Saving… 📷');await safe(async()=>store.put('memories',uid(),await seal({img:await shrink(f),cap,by:ME,ts:Date.now()})),'Memory saved 💙')};
 
 // ---------- Bucket list (shared: add / edit / tick / delete) ----------
 function rBucket(){$('#blist').innerHTML=sorted('bucket').sort((a,b)=>a.done-b.done||a.ts-b.ts).map(b=>`<li class="${b.done?'done':''}"><input type="checkbox" ${b.done?'checked':''} onchange="tickB('${b.id}',this.checked)"><span>${esc(b.text)} <small class="muted">· ${esc(b.done?'done by '+b.doneBy:'added by '+b.by)}</small></span><span class="x"><button onclick="editB('${b.id}')">✏️</button><button onclick="delItem('bucket','${b.id}')">🗑</button></span></li>`).join('')||'<div class="empty"><img src="assets/lululemon.jpg"><p>Dream big together ✨</p></div>'}
